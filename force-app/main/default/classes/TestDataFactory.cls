@@ -1,3 +1,4 @@
+@isTest
 public class TestDataFactory {
    public static UserRole createUserRole(String name, Id parentRoleId) {
         UserRole ur = new UserRole(Name=name, parentRoleId=parentRoleId);
