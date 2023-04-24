@@ -1,29 +1,25 @@
 public with sharing class RoleHierarchy {
+    
+    public class myCustomException Extends Exception{}
+    
     @AuraEnabled(cacheable=true)
     public static List<TreeNode> getTreeData(String recordId){
         // Create maps to hold nodes for roles and users
         Map<Id, TreeNode> roleNodes = new Map<Id, TreeNode>();
         Map<Id, TreeNode> userNodes = new Map<Id, TreeNode>();
-        System.debug(recordId);
         // Query the employee record with the given ID to get the employee's email address
-        EMS_Employee__c emp = [Select Id, EMS_Work_Email__c from EMS_Employee__c where Id =:recordId];
-        System.debug(emp);
-        String email = emp.EMS_Work_Email__c;
-        System.debug(email);
-        User u1 = [Select Id from User where Email =: email LIMIT 1];
-        System.debug(u1);
-        
-        // Query the User record again to get the user's role and the role hierarchy
-        User insertedUser = [SELECT UserRoleId FROM User WHERE Id =:u1.Id];
-        String userRoleId = insertedUser.UserRoleId;
-        List<User> users = [SELECT Id, Name, UserRoleId, UserRole.Name FROM User WHERE Id =:u1.Id];
-        System.debug(users);
-        Map<Id,UserRole> userRoles = new Map<Id,UserRole>([SELECT Id, Name, ParentRoleId FROM UserRole 
-                                                           WHERE Id <=: userRoleId]);
+        EMS_Employee__c[] emp = [Select Id, EMS_Work_Email__c from EMS_Employee__c where Id =:recordId];
+        if(emp.size()<=0){
+            throw new myCustomException('no emp record exists');
+        }
+        User loggedInEmployee = [Select Id, Name, UserRoleId, UserRole.Name from User where Email =: emp[0].EMS_Work_Email__c LIMIT 1];
+        String insertedUserRoleId = loggedInEmployee.UserRoleId;
+        Map<Id,UserRole> userRoles = new Map<Id,UserRole>([SELECT Id, Name, ParentRoleId FROM UserRole]);
         // Traverse the role hierarchy and build a list of roles in ascending order
         List<UserRole> roles = new List<UserRole>();
-        UserRole currentRole = userRoles.get(Id.valueOf(userRoleId));
+        UserRole currentRole = userRoles.get(Id.valueOf(insertedUserRoleId));
         roles.add(currentRole);
+        
         Id parentId = currentRole.parentRoleId;
         while(parentId!=null){
             UserRole parentRole = userRoles.get(parentId);
@@ -40,23 +36,19 @@ public with sharing class RoleHierarchy {
         }
         
         // Build user nodes
-        for (User u : users) {
-            TreeNode userNode = new TreeNode(u.Name, u.Name, false, new List<TreeNode>());
-            userNodes.put(u.Id, userNode);
-        }
+        TreeNode userNode = new TreeNode(loggedInEmployee.Name, loggedInEmployee.Name, false, new List<TreeNode>());
+        userNodes.put(loggedInEmployee.Id, userNode);
+        
         
         // Build hierarchy
         for (UserRole r : roles) {
             if (r.ParentRoleId != null) {
-                System.debug(roleNodes.get(r.ParentRoleId));
-                roleNodes.get(r.ParentRoleId).items.add(roleNodes.get(r.Id));
+                roleNodes.get(r.ParentRoleId).items.add(roleNodes.get(r.Id)); 
             }
         }
         
-        for (User u : users) {
-            if (roleNodes.containsKey(u.UserRoleId)) {
-                roleNodes.get(u.UserRoleId).items.add(userNodes.get(u.Id));
-            }
+        if (roleNodes.containsKey(loggedInEmployee.UserRoleId)) {
+            roleNodes.get(loggedInEmployee.UserRoleId).items.add(userNodes.get(loggedInEmployee.Id));
         }
         
         // Return top-level nodes (root user role nodes)
@@ -66,7 +58,7 @@ public with sharing class RoleHierarchy {
                 topLevelNodes.add(roleNodes.get(r.Id));
             }
         }
-        
+        System.debug('top level nodes ' + topLevelNodes);
         return topLevelNodes;
     } 
     // Define a custom TreeNode class to represent a node in the hierarchy
