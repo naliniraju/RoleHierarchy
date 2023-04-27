@@ -1,8 +1,8 @@
 import { LightningElement, wire } from 'lwc';
 import getCalendarEvents from '@salesforce/apex/holidayCalender.getEvents';
 const columns = [
-    { label: 'Holiday', fieldName: 'Subject' },
-    { label: 'Date', fieldName: 'StartDateTime', type: 'date' },
+    { label: 'Holiday', fieldName: 'Subject' ,wrapText: true, hideDefaultActions: true},
+    { label: 'Date', fieldName: 'StartDateTime', type: 'date',wrapText: true, hideDefaultActions: true },
 ];
 export default class HolidayCalender extends LightningElement {
     events = [];

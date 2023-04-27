@@ -4,14 +4,15 @@ private class RoleHierarchyTest {
        static testMethod void testGetTreeData_Positive() {
 
         // Create a test employee record
-        EMS_Employee__c emp = TestDataFactory.createEmployee();
-        User testUser = TestDataFactory.createUser(emp);
+        EMS_Employee__c emp = TestDataFactory.createEmployee(true);
+        User testUser = TestDataFactory.createUser(emp,true);
         
         System.runAs(testUser){// Set up test data
-            UserRole role1 = TestDataFactory.createRole('Role 1', null);
-            UserRole role2 = TestDataFactory.createRole('Role 2', role1.Id);
-            testUser.UserRoleId = role2.Id;
-            update testUser;
+            UserRole role1 = TestDataFactory.createRole('Role 1',null,true);
+            UserRole role2 = TestDataFactory.createRole('Role 2', role1.Id,true);
+            TestDataFactory.updateUser(testUser,true);
+            //testUser.UserRoleId = role2.Id;
+           // update testUser;
         
         // Call the method with a valid recordId
         	List<RoleHierarchy.TreeNode> result = RoleHierarchy.getTreeData(emp.Id);

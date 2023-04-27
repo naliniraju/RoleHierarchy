@@ -2,8 +2,9 @@
 private class holidayCalendarTest {
 @testSetup 
     static void setup() {
-        List<Event> events = TestDataFactory.getEvents();
-        insert events;
+        List<Event> events = TestDataFactory.getEvents(true);
+       // insert events;
+        
     }
     
     @isTest 
